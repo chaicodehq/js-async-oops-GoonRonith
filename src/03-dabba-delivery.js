@@ -77,29 +77,125 @@
 export class DabbaService {
   constructor(serviceName, area) {
     // Your code here
+    this.serviceName = serviceName;
+    this.area = area;
+    this.customers = [];
+    this._nextId = 1;
   }
 
   addCustomer(name, address, mealPreference) {
     // Your code here
+    if (
+      mealPreference !== "veg" &&
+      mealPreference !== "nonveg" &&
+      mealPreference !== "jain"
+    )
+      return null;
+
+    const existingCustomer = this.customers.find(
+      (customer) => customer.name === name,
+    );
+    if (existingCustomer) return null;
+
+    const newCustomer = {
+      id: this._nextId++,
+      name,
+      address,
+      mealPreference,
+      active: true,
+      delivered: false,
+    };
+    this.customers.push(newCustomer);
+    return newCustomer;
   }
 
   removeCustomer(name) {
     // Your code here
+    const existingCustomer = this.customers.find(
+      (customer) => customer.name.toLowerCase() === name.toLowerCase(),
+    );
+    if (!existingCustomer || existingCustomer.active === false) return false;
+    existingCustomer.active = false;
+    return true;
   }
 
   createDeliveryBatch() {
     // Your code here
+    const activeCustomers = this.customers.filter(
+      (customer) => customer.active,
+    );
+    if (activeCustomers.length === 0) return [];
+
+    activeCustomers.forEach((activeCustomer) => {
+      activeCustomer.delivered = false;
+    });
+
+    const deliveryBatch = activeCustomers.map((customer) => ({
+      customerId: customer.id,
+      name: customer.name,
+      address: customer.address,
+      mealPreference: customer.mealPreference,
+      batchTime: new Date().toISOString(),
+    }));
+
+    return deliveryBatch;
   }
 
   markDelivered(customerId) {
     // Your code here
+    const customer = this.customers.find(
+      (customer) => customer.id === customerId,
+    );
+    if (!customer || customer.active === false) return false;
+    customer.delivered = true;
+    return true;
   }
 
   getDailyReport() {
     // Your code here
+    const result = this.customers.reduce(
+      (acc, customer) => {
+        if (!customer.active) return acc;
+
+        acc.totalCustomers++;
+
+        if (customer.delivered) {
+          acc.delivered++;
+        } else {
+          acc.pending++;
+        }
+
+        if (customer.mealPreference === "veg") {
+          acc.mealBreakdown.veg++;
+        } else if (customer.mealPreference === "nonveg") {
+          acc.mealBreakdown.nonveg++;
+        } else if (customer.mealPreference === "jain") {
+          acc.mealBreakdown.jain++;
+        }
+
+        return acc;
+      },
+      {
+        totalCustomers: 0,
+        delivered: 0,
+        pending: 0,
+        mealBreakdown: {
+          veg: 0,
+          nonveg: 0,
+          jain: 0,
+        },
+      },
+    );
+
+    return result;
   }
 
   getCustomer(name) {
     // Your code here
+    const customer = this.customers.find(
+      (customer) => customer.name.toLowerCase() === name.toLowerCase(),
+    );
+    if (customer) return customer;
+    return null;
   }
 }
